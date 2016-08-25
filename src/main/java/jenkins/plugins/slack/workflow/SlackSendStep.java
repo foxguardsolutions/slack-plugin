@@ -1,23 +1,34 @@
 package jenkins.plugins.slack.workflow;
 
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.domains.HostnameRequirement;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Util;
+import hudson.model.Project;
 import hudson.model.TaskListener;
+import hudson.security.ACL;
+import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import jenkins.plugins.slack.Messages;
 import jenkins.plugins.slack.SlackNotifier;
 import jenkins.plugins.slack.SlackService;
 import jenkins.plugins.slack.StandardSlackService;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
+
+import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 
 /**
  * Workflow step to send a Slack channel notification.
@@ -112,6 +123,26 @@ public class SlackSendStep extends AbstractStepImpl {
         @Override
         public String getDisplayName() {
             return Messages.SlackSendStepDisplayName();
+        }
+
+        public ListBoxModel doFillTokenCredentialIdItems(@AncestorInPath Project project) {
+            if (!Jenkins.getInstance().hasPermission(Jenkins.ADMINISTER)) {
+                return new ListBoxModel();
+            }
+            return new StandardListBoxModel()
+                    .withEmptySelection()
+                    .withAll(lookupCredentials(
+                            StringCredentials.class,
+                            project,
+                            ACL.SYSTEM,
+                            new HostnameRequirement("*.slack.com"))
+                    );
+        }
+
+        //WARN users that they should not use the plain/exposed token, but rather the token credential id
+        public FormValidation doCheckToken(@QueryParameter String value) {
+            //always show the warning - TODO investigate if there is a better way to handle this
+            return FormValidation.warning("Exposing your Integration Token is a security risk. Please use the Integration Token Credential ID");
         }
     }
 
