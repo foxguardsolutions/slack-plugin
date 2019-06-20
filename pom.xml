@@ -28,7 +28,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <workflow.version>1.11</workflow.version>
-        <hamcrest.version>1.3</hamcrest.version>
+        <hamcrest.version>2.1</hamcrest.version>
         <powermock.version>1.6.2</powermock.version>
     </properties>
 
